@@ -1,0 +1,9 @@
+{
+  "name": "convex-improved-migration-e2e-b",
+  "private": true,
+  "type": "module",
+  "description": "Second local deployment for the snapshot import check. Uses ../convex.",
+  "dependencies": {
+    "convex": "^1.44.0"
+  }
+}

@@ -1,0 +1,70 @@
+#root {
+	max-width: 880px;
+	margin: 0 auto;
+	padding: 2rem;
+	text-align: left;
+}
+
+.lead {
+	opacity: 0.7;
+}
+
+.actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+	margin: 1.5rem 0;
+}
+
+.plan-state {
+	margin: 0 0 0.5rem;
+}
+
+table {
+	width: 100%;
+	border-collapse: collapse;
+	margin-bottom: 1.5rem;
+	font-size: 0.9rem;
+}
+
+th,
+td {
+	padding: 0.4rem 0.6rem;
+	text-align: left;
+	border-bottom: 1px solid rgba(128, 128, 128, 0.25);
+	vertical-align: top;
+}
+
+th {
+	font-weight: 500;
+	opacity: 0.7;
+}
+
+td.number {
+	font-variant-numeric: tabular-nums;
+}
+
+.state {
+	display: inline-block;
+	padding: 0 0.5rem;
+	border-radius: 4px;
+	background-color: rgba(128, 128, 128, 0.15);
+}
+
+.state.done {
+	background-color: rgba(60, 170, 90, 0.25);
+}
+
+.state.running {
+	background-color: rgba(100, 108, 255, 0.3);
+}
+
+.state.failed,
+.state.stalled {
+	background-color: rgba(220, 70, 70, 0.3);
+}
+
+.muted {
+	opacity: 0.6;
+	font-size: 0.85rem;
+}

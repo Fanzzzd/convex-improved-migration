@@ -1,0 +1,224 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>两种 migration 组件对比</title><style>
+:root{--bg:#fbfaf7;--fg:#1d1d1f;--muted:#6b6b70;--line:#e6e3dc;--card:#ffffff;--accent:#2f5d50;--accent-soft:#e7efe9;--warn:#8a4b0f;--warn-soft:#fbefe1;--code-bg:#16181d;--code-fg:#e6e6e6}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.7 -apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Segoe UI",sans-serif}
+.layout{display:grid;grid-template-columns:240px minmax(0,1fr);max-width:1180px;margin:0 auto}
+nav{position:sticky;top:0;align-self:start;height:100vh;overflow:auto;padding:40px 20px 40px 28px;border-right:1px solid var(--line);font-size:14px}
+nav .brand{font-weight:650;margin-bottom:16px;letter-spacing:.01em}
+nav a{display:block;color:var(--muted);text-decoration:none;padding:4px 0}
+nav a:hover{color:var(--fg)}
+main{padding:48px 56px 120px;min-width:0}
+h1{font-size:30px;line-height:1.3;margin:0 0 8px}
+h2{font-size:22px;margin:64px 0 12px;padding-top:8px;border-top:1px solid var(--line)}
+h3{font-size:17px;margin:32px 0 8px}
+p,li{color:#2b2b2f}
+.lead{font-size:18px;color:var(--muted);margin:0 0 24px}
+.status{display:inline-block;font-size:13px;padding:2px 10px;border-radius:999px;background:var(--warn-soft);color:var(--warn);margin-bottom:20px}
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:14.5px;background:var(--card)}
+th,td{text-align:left;vertical-align:top;padding:9px 12px;border-bottom:1px solid var(--line)}
+th{font-weight:600;color:var(--muted);font-size:13px;background:#f4f2ec}
+td code,p code,li code{font:13.5px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;background:#efece5;padding:1px 5px;border-radius:4px}
+figure.code{margin:16px 0;border-radius:10px;overflow:hidden;background:var(--code-bg)}
+.code-title{font:12.5px ui-monospace,Menlo,monospace;color:#9aa0a6;padding:8px 16px;border-bottom:1px solid #2a2d34}
+pre{margin:0;padding:16px 18px;overflow:auto;color:var(--code-fg);font:13.5px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace}
+.tok-k{color:#c792ea}.tok-s{color:#c3e88d}.tok-c{color:#7f848e;font-style:italic}.tok-n{color:#f78c6c}.tok-t{color:#82aaff}.tok-p{color:#89ddff}.tok-ok{color:#8bd49c}.tok-err{color:#ff8b8b}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid2>div{min-width:0}
+.label{font-size:13px;color:var(--muted);margin:8px 0 -8px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin:16px 0}
+.decision{border-left:3px solid var(--accent);background:var(--accent-soft);padding:12px 16px;border-radius:0 8px 8px 0;margin:12px 0}
+.decision b{display:block;margin-bottom:4px}
+.note{font-size:14px;color:var(--muted)}
+.kinds{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:16px 0}
+.kinds .card{margin:0}
+.kinds h4{margin:0 0 6px;font-size:15px}
+.kinds p{margin:0;font-size:14px}
+@media (max-width:900px){.layout{grid-template-columns:1fr}nav{display:none}main{padding:32px 20px}.grid2,.kinds{grid-template-columns:1fr}}
+
+@media (min-width:901px){.layout{grid-template-columns:200px minmax(0,1fr);max-width:1400px}}
+.vs{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin:12px 0}
+.vs>div{min-width:0}
+.col-h{font-size:13px;font-weight:600;padding:4px 10px;border-radius:6px;display:inline-block;margin-bottom:4px}
+.old{background:#f6e7e3;color:#8a3b25}.new{background:var(--accent-soft);color:var(--accent)}
+.verdict{border-left:3px solid var(--accent);background:var(--accent-soft);padding:10px 14px;border-radius:0 8px 8px 0;margin:8px 0 0}
+.yes{color:var(--accent);font-weight:600}.part{color:var(--warn);font-weight:600}
+td,th{overflow-wrap:anywhere}
+@media (max-width:900px){.vs{grid-template-columns:1fr}}
+</style></head><body>
+<div class="layout"><nav><div class="brand">左右对比</div><a href="#summary">总览</a><a href="#p1">1. 新部署重放全部</a><a href="#p2">2. 等不到结束、失败不报错</a><a href="#p3">3. 就绪旗</a><a href="#p4">4. 导入后不重建</a><a href="#p5">5. 种子数据</a><a href="#p6">6. 剪枝</a><a href="#more">其他改进</a></nav><main><h1>@convex-dev/migrations 与 convex-improved-migration 对比</h1>
+<p class="lead">左边是官方组件 <code>@convex-dev/migrations</code>（0.3.x，源码按 main <code>202fa4a</code> 核对），右边是 convex-improved-migration。按促成这个项目的六个问题逐一对照，问题原文见 <code>docs/research/problem-statement.md</code>。</p>
+<p class="note">左栏是一个生产应用里用官方组件的典型写法，名字已改写。终端输出为示意。</p><h2 id="summary">总览：解决了哪些问题</h2><table><tr><th>问题</th><th>旧组件</th><th>新方案</th><th>结果</th></tr>
+<tr><td>1. <code>runAll</code> 涨到近百项，新部署全部重放；没有 baseline，也不能"记为完成"</td><td>只能按名字跳过已完成的；没有任何"不运行就记完成"的 API</td><td>Done 只有三种来源：跑完、<code>mark-done</code>（必须写原因）、<code>adopt</code>（带条数校验）。删掉步骤就是剪枝，新部署只跑当前计划</td><td class="yes">解决</td></tr>
+<tr><td>2. <code>convex run migrations:runAll</code> 跑完第一批就返回；setup 和 CI 等不到结束，链路中途失败也不会让调用方失败</td><td>runner 跑一批后用 scheduler 串下去；失败作为返回值，CLI 退出码 0</td><td>CLI 程序持有一个 <code>apply</code> 调用并等到结束，退出码 0 / 1 / 2；也可以直接 <code>convex run migrations:apply</code>，失败就抛错</td><td class="yes">解决</td></tr>
+<tr><td>3. 就绪旗放在应用表，读路径缺旗就降级，空的新部署要专门跑一条迁移去翻旗</td><td>没有就绪概念，只能自建 <code>migrationFlags</code> 表加翻旗迁移</td><td><code>migrations.isReady(ctx, "id")</code> 读组件状态；旗表和所有 <code>mark*Ready</code> 都可以删</td><td class="yes">解决</td></tr>
+<tr><td>4. 派生数据重建混在迁移队列；<code>convex import</code> 连组件状态一起导入，已完成的名字被跳过，什么都不会重建</td><td>重建项和一次性迁移没有区别，导入后显示"已完成"</td><td><code>m.rebuild</code> 单独一类，按版本号触发；检测到导入自动重建（本地 e2e 已验证）；也可以手动 <code>rebuild --all</code></td><td class="yes">解决</td></tr>
+<tr><td>5. 参考数据种子放在迁移队列里，还在 dev seed 脚本里重复一份</td><td>只能手写一个模仿迁移协议的 <code>internalMutation</code> 塞进 runner</td><td><code>m.seed</code> 每次 apply 都跑；dev seed 复用同一个函数</td><td class="yes">解决</td></tr>
+<tr><td>6. 剪枝已完成的迁移在官方文档里没有说明，应用只能自己发明归档流程</td><td>没有文档，也没有工具</td><td><code>status</code> 列出每个步骤的状态、完成方式和完成时间，以及已移出计划的记录；某个部署上还没跑完就被删，apply 会在那里拒绝执行并点名</td><td class="yes">解决</td></tr>
+</table><h2 id="p1">1. 新部署重放全部近百项</h2><div class="vs"><div><span class="col-h old">@convex-dev/migrations 0.3.x</span><figure class="code"><div class="code-title">convex/migrations.ts（两千多行）</div><pre><code class="lang-ts">export const migrations = new Migrations&lt;DataModel&gt;(components.migrations);
+
+export const backfillX_20260814 = migrations.define({
+  table: &quot;orders&quot;,
+  migrateOne: async (ctx, doc) =&gt; { /* … */ },
+});
+// … 还有近百个
+
+export const runAll = migrations.runner([
+  internal.migrations.convertOrderNotes_20260913,
+  internal.migrations.renameTeamsOnProjects_20260730,
+  // … 近百项，每项都要保留源码才能部署
+]);</code></pre></figure><figure class="code"><pre><code class="lang-sh"># 新的本地部署：近百个迁移逐个调度
+$ npx convex run migrations:runAll</code></pre></figure><p>要删掉一项，只能自己确认生产已完成，再手工维护归档文档。组件没有"不运行就记为完成"的 API。</p></div><div><span class="col-h new">convex-improved-migration</span><figure class="code"><div class="code-title">convex/migrations.ts</div><pre><code class="lang-ts">const m = defineMigrations(components.migration, { schema });
+
+export const migrations = m.plan([
+  // 只留还有部署没跑完的步骤
+  m.migrate(&quot;2026-11-10-backfill-x&quot;, {
+    table: &quot;orders&quot;,
+    needs: (r) =&gt; r.searchText === undefined,
+    run: (ctx, r) =&gt; ({ searchText: toSearchText(r) }),
+  }),
+]);
+export const { apply, status, operate, runStep } = migrations.functions;
+
+// 切换期间保留，读取旧组件的状态
+export const adopt = m.adopt(components.migrations);</code></pre></figure><figure class="code"><pre><code class="lang-sh"># 切换时：把旧组件里已完成的 100 条记录搬过来，条数对不上就拒绝
+$ npx convex-improved-migration adopt --expect-count 100 --prod
+Adopted 100; 0 were already done.</code></pre></figure><p>已完成的记录按旧组件里的名字保存。这些名字不在新计划里，<code>status</code> 把它们列在 "Removed from the Plan" 下面，对应的代码可以直接删掉。新部署只跑计划里的步骤，每项在空表上只花一个空批次。</p></div></div><div class="verdict"><span class="yes">解决。</span>"不运行就记为完成"有三条明确的路：跑完、<code>mark-done</code>（必须写原因）、<code>adopt</code>（带条数校验）。组件从不因为"看起来是新库"就自动跳过。</div><h2 id="p2">2. 等不到结束，失败也不报错</h2><div class="vs"><div><span class="col-h old">@convex-dev/migrations 0.3.x</span><figure class="code"><div class="code-title">第一批失败</div><pre><code class="lang-sh">$ npx convex run migrations:runAll
+{ Status: &quot;Migration failed: …&quot; }       # 失败作为返回值
+$ echo $?
+0                                         # CI 和 setup 脚本以为成功了</code></pre></figure><figure class="code"><div class="code-title">第一批成功</div><pre><code class="lang-sh">$ npx convex run migrations:runAll
+{ Status: &quot;Migration in progress&quot;, processed: 100 }
+# 只跑了第一批，后面靠 scheduler 串下去
+# setup 脚本随即执行 seedDev，和剩下的迁移并发</code></pre></figure><p>只能用 <code>lib:getStatus --watch</code> 盯着看；<code>runToCompletion</code> 能等，但一次只处理一个迁移。</p></div><div><span class="col-h new">convex-improved-migration</span><figure class="code"><div class="code-title">CLI 程序：等到结束</div><pre><code class="lang-sh">$ npx convex-improved-migration apply --prod
+  countries                            done
+  2026-11-10-backfill-x                running  412000 processed
+Step &quot;2026-11-10-backfill-x&quot; (migration) failed on batch 4121 after 412000 document(s) (batch size 100).
+Error: …
+Later Steps did not run: 2026-11-12-clear-old-field.
+Next: fix the cause, then npx convex-improved-migration apply resumes from the saved cursor.
+Or restart this Step: npx convex-improved-migration reset 2026-11-10-backfill-x
+Or record it as done without running: npx convex-improved-migration mark-done 2026-11-10-backfill-x --reason &quot;...&quot;
+$ echo $?
+1</code></pre></figure><figure class="code"><pre><code class="lang-sh"># 不装 CLI 也行：apply 是 action，失败就抛错
+# 超过 4 分钟会抛 Still running，并给出续等的命令
+$ npx convex run migrations:apply</code></pre></figure><p>CLI 持有一个 <code>apply</code> 调用，同时轮询 <code>status</code> 打印进度。<code>npx convex run</code> 的一次调用超过 300 秒就会被客户端放弃（本地后端实测 302 秒），所以一次 <code>apply</code> 调用最多工作 4 分钟，之后把运行交给后台驱动并报 Still running。CLI 接着用 <code>resume</code> 续接同一个运行，Seed 不会重跑，所以长时间的回填不受单次调用时长的限制。e2e 验证了两种情况：一次 312 秒、跨两次 <code>apply</code> 调用的运行退出码为 0；没有开 <code>convex dev</code> 的匿名本地部署上也能跑完。退出码：0 全部完成，1 失败或被拒绝，2 超过 <code>--timeout</code> 但运行仍在继续，64 用法错误。同一部署上第二个 apply 会接管第一个，第一个在下一个批次边界停下并报告被接管。</p></div></div><div class="verdict"><span class="yes">解决。</span>setup 脚本改成"apply 成功后再 seedDev"即可；CI 用退出码判断。</div><h2 id="p3">3. 就绪旗</h2><div class="vs"><div><span class="col-h old">@convex-dev/migrations 0.3.x</span><figure class="code"><div class="code-title">应用自建的就绪旗流程</div><pre><code class="lang-ts">// schema：共享的就绪旗表
+migrationFlags: defineTable({ key: v.string(), ready: v.boolean() })
+  .index(&quot;by_key&quot;, [&quot;key&quot;]),
+
+// 最后一个回填之后，再加一条迁移去翻旗
+export const markOrderSearchReady_20260814 = …;
+
+// 读路径
+const flag = await ctx.db.query(&quot;migrationFlags&quot;)
+  .withIndex(&quot;by_key&quot;, (q) =&gt; q.eq(&quot;key&quot;, &quot;orderSearch&quot;)).unique();
+return flag?.ready ? newSearch(ctx) : legacySearch(ctx);
+
+// contract 时还要一条迁移删掉旗
+export const clearOrderSearchFlag_20260818 = …;</code></pre></figure><p>空的新部署读不到旗就走降级路径，所以也得把翻旗迁移跑一遍。</p></div><div><span class="col-h new">convex-improved-migration</span><figure class="code"><div class="code-title">读路径</div><pre><code class="lang-ts">import { migrations } from &quot;./migrations&quot;;
+
+const ready = await migrations.isReady(ctx, &quot;2026-08-14-order-search&quot;);
+return ready ? newSearch(ctx) : legacySearch(ctx);
+
+// id 拼错，tsc 直接报错
+// contract 时删掉这个分支即可，没有旗要清</code></pre></figure><p>新部署上，这一步在空表上跑一个空批次就算完成。在那之前读到的是旧路径，因为没有旧数据，结果也是对的。<code>isReady</code> 是响应式的，只在步骤状态变化时触发重算，不会每个批次都让查询重跑。</p></div></div><div class="verdict"><span class="yes">解决。</span>旗表、翻旗迁移、清旗迁移三样东西都不再需要。</div><h2 id="p4">4. 导入快照后派生数据不重建</h2><div class="vs"><div><span class="col-h old">@convex-dev/migrations 0.3.x</span><figure class="code"><div class="code-title">生产应用里的写法</div><pre><code class="lang-ts">export const runAll = migrations.runner([
+  // …
+  // 2026-08-17 故意留着：从 convex import 恢复的部署
+  // 需要它们重建 triggers 没见过的计数器
+  internal.migrations.backfillOpenTaskCounts_20260817,
+  internal.migrations.backfillPendingTaskCounts_20260817,
+  // …
+]);</code></pre></figure><figure class="code"><pre><code class="lang-sh">$ npx convex import --replace-all prod-snapshot.zip
+# 组件状态也被导入，这些回填显示 isDone → 被跳过
+$ npx convex run migrations:runAll
+# 计数器仍然是错的</code></pre></figure></div><div><span class="col-h new">convex-improved-migration</span><figure class="code"><div class="code-title">单独一类：Rebuild</div><pre><code class="lang-ts">m.rebuild(&quot;task-counters&quot;, {
+  version: 2,                    // 改了派生逻辑就加一
+  table: &quot;tasks&quot;,
+  clear: &quot;taskCounters&quot;,      // 先清空派生表
+  run: (ctx, task) =&gt; incrementCounter(ctx, task.status),
+}),</code></pre></figure><figure class="code"><div class="code-title">检测到导入，自动重建</div><pre><code class="lang-sh">$ npx convex import --replace-all prod-snapshot.zip
+$ npx convex-improved-migration apply
+Snapshot import detected: Rebuilds run again.
+  task-counters                        done     975 processed
+  order-search-postings                done     12044 processed
+Done in 9s.</code></pre></figure><p>检测原理：每次 apply 都取消旧的哨兵调度函数，再预约一个 4 年后才执行的新哨兵，并记下它的 id 和令牌。导入不会恢复待执行的调度函数，所以记录里的哨兵查不到就说明状态是恢复来的。本地 e2e 验证了两种情况：A 的快照导入 B，以及 A 的快照导回 A。下一次 <code>apply</code> 之前，<code>status</code> 报告 <code>importSuspected</code>，已完成的 Rebuild 显示为 pending，<code>check</code> 退出码为 1，<code>isReady</code> 对 Rebuild 返回 false。在控制台取消全部调度函数也会被当成导入。有两种情况检测不到，需要手动执行 <code>rebuild --all</code> 或 <code>rebuild &lt;id&gt;</code>：快照导回同一个部署、而且快照之后没有跑过 apply；只导入单张表（<code>convex import --table</code>）。计数漂移也检测不到。</p></div></div><div class="verdict"><span class="yes">解决。</span>重建和一次性迁移分开；导入后自动重建，不再靠在 runAll 里"故意留着"。</div><h2 id="p5">5. 种子数据</h2><div class="vs"><div><span class="col-h old">@convex-dev/migrations 0.3.x</span><figure class="code"><div class="code-title">手写迁移协议的种子</div><pre><code class="lang-ts">// 为了能放进 runner，手写一套迁移协议
+export const seedCountries_20260826 = internalMutation({
+  args: {
+    cursor: v.optional(v.union(v.string(), v.null())),
+    batchSize: v.optional(v.number()),
+    dryRun: v.optional(v.boolean()),
+    oneBatchOnly: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) =&gt; {
+    const cursor = args.cursor == null ? 0 : Number(args.cursor);
+    // … 自己处理游标、dry run、进度
+  },
+});
+// 另外 seedDev 里还有一份类似的种子逻辑</code></pre></figure><p>而且它只会跑一次。以后新增参考数据，就得再写一条新迁移。</p></div><div><span class="col-h new">convex-improved-migration</span><figure class="code"><pre><code class="lang-ts">export const upsertCountries = async (ctx: MutationCtx) =&gt; {
+  for (const c of COUNTRIES) {
+    const row = await ctx.db.query(&quot;countries&quot;)
+      .withIndex(&quot;by_code&quot;, (q) =&gt; q.eq(&quot;code&quot;, c.code)).unique();
+    if (row === null) await ctx.db.insert(&quot;countries&quot;, c);
+  }
+};
+
+m.seed(&quot;countries&quot;, upsertCountries),   // 每次 apply 都跑
+
+// seedDev 直接调用同一个 upsertCountries</code></pre></figure><p>新增国家只需要改 <code>COUNTRIES</code>，下一次部署就会补上。不用写游标，也不用写 dry run 协议。一次性的授权类操作用 <code>m.once("id", run)</code>。</p></div></div><div class="verdict"><span class="yes">解决。</span>种子从迁移队列里拿出来；生产和 dev 共用一个函数。</div><h2 id="p6">6. 剪枝</h2><div class="vs"><div><span class="col-h old">@convex-dev/migrations 0.3.x</span><figure class="code"><pre><code class="lang-sh"># 应用自建的归档流程
+$ npx convex run --prod --component migrations lib:getStatus &#x27;{&quot;limit&quot;:1000}&#x27; &gt; status.json
+$ node scripts/archive-candidates.mjs --status status.json …
+# 再人工确认、删代码、写归档 README</code></pre></figure><p><code>getStatus</code> 默认只返回最新 100 行；状态有一部分来自调度记录，7 天后会变成 unknown。</p></div><div><span class="col-h new">convex-improved-migration</span><figure class="code"><div class="code-title">每个部署一条命令看清状态</div><pre><code class="lang-sh">$ npx convex-improved-migration status --prod
+Plan: done
+  countries                            done
+  2026-11-10-backfill-x                done     412000 processed
+Removed from the Plan:
+  migrations:backfillX_20260814        done via adopted
+  2026-09-01-rename-team               done via ran</code></pre></figure><figure class="code"><div class="code-title">删早了会拒绝</div><pre><code class="lang-sh"># 某个部署上还没跑完就被删了：
+$ npx convex-improved-migration apply
+Refusing to run: &quot;2026-08-26-split-projects&quot; (running) was removed from the Plan before finishing on this deployment. Put the Step back and run apply, or record it with npx convex-improved-migration mark-done 2026-08-26-split-projects --reason &quot;...&quot;</code></pre></figure></div></div><div class="verdict"><span class="yes">解决。</span>剪枝就是从计划里删掉步骤。每个部署的 <code>status</code> 都显示 Done 之后就可以删；删早了，没跑完的部署会拒绝执行，不会悄悄跳过。跨部署汇总“哪些已经全部完成”目前没有内置命令，需要逐个部署看 <code>status --json</code>。</div><h2 id="more">其他改进（六个问题之外）</h2><table><tr><th>问题</th><th>旧组件</th><th>新方案</th></tr>
+<tr><td>外层事务中止（超时、OCC 重试用尽）不留错误信息（upstream #5）</td><td>只看得到调度记录里的 failed，7 天后消失</td><td>驱动是 action，能看到每个批次的失败并单独写入；e2e 已验证 1 秒超时会被记录为失败</td></tr>
+<tr><td>事务超限</td><td>固定批大小，失败要手动调</td><td>撞到平台限额自动减半重试，之后每批最多按 1.2 倍恢复；e2e 中 100 → 50 → 25 后跑完。应用代码抛出的错误不会触发减半</td></tr>
+<tr><td>本地后端写入限流（每秒 4 MiB）</td><td>未处理</td><td>驱动内等待后重试同一批次（1 秒起，翻倍到 16 秒，最多 8 次）；e2e 中约 144 MB 写入触发 12 次限流后跑完</td></tr>
+<tr><td>dry run 只看主表（upstream #16）</td><td>是</td><td>从已保存的游标开始，列出下一批对任意表的写入，最多 20 条；要从头开始的步骤会在一个回滚的事务里先执行 <code>clear</code> 再预览第一批</td></tr>
+<tr><td>同一文件定义迁移又引用 <code>internal</code> 时出 TS2589（upstream #28）</td><td>会出现</td><td>步骤是数据，不引用 <code>internal</code>，结构上不会出现</td></tr>
+<tr><td>挪文件或改函数名会重跑</td><td>会，状态按函数路径记录</td><td>不会，按声明的 id 记录</td></tr>
+<tr><td>迁移跑完后的校验</td><td>每个迁移自己写 verifier</td><td><code>needs</code> 同时用于跳过已处理文档、完成前校验、测试断言。校验发现遗漏时步骤失败，下一次 apply 重新扫描</td></tr>
+<tr><td>测试</td><td>自己拼 runner 调用</td><td><code>t.action(internal.migrations.apply, {})</code> 加 <code>expectNoneNeed</code></td></tr>
+<tr><td>reset 之后原来的处理条数和完成时间丢失</td><td>会，reset 覆盖 processed、latestStart、latestEnd</td><td>reset 事件里保留之前的状态、完成时间和条数；运行正在处理的步骤拒绝 reset，要先 cancel</td></tr>
+</table></main></div><script>
+(function(){
+  const KW = /\b(import|from|export|const|let|async|await|return|if|else|for|of|new|type|function|true|false|undefined|null|default|test|expect)\b/g;
+  function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+  function hiTs(src){
+    const out=[]; let i=0;
+    const re=/(\/\/[^\n]*)|("(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'|`(?:[^`\\]|\\.)*`)|\b(\d[\d_]*)\b|\b([A-Z][A-Za-z0-9]+)\b|(\b[a-zA-Z_]\w*\b)/g;
+    let m;
+    while((m=re.exec(src))){
+      out.push(esc(src.slice(i,m.index)));
+      if(m[1]) out.push('<span class="tok-c">'+esc(m[1])+'</span>');
+      else if(m[2]) out.push('<span class="tok-s">'+esc(m[2])+'</span>');
+      else if(m[3]) out.push('<span class="tok-n">'+esc(m[3])+'</span>');
+      else if(m[4]) out.push('<span class="tok-t">'+esc(m[4])+'</span>');
+      else { const w=m[5]; KW.lastIndex=0; out.push(KW.test(w)?'<span class="tok-k">'+w+'</span>':esc(w)); }
+      i=re.lastIndex;
+    }
+    out.push(esc(src.slice(i)));
+    return out.join('');
+  }
+  function hiSh(src){
+    return src.split('\n').map(function(line){
+      if(/^\$ /.test(line)) return '<span class="tok-p">$</span> '+esc(line.slice(2));
+      if(/^#/.test(line)) return '<span class="tok-c">'+esc(line)+'</span>';
+      if(/^(✖|Error|  Uncaught)/.test(line)) return '<span class="tok-err">'+esc(line)+'</span>';
+      if(/^(✔|ok)/.test(line)) return '<span class="tok-ok">'+esc(line)+'</span>';
+      return esc(line);
+    }).join('\n');
+  }
+  document.querySelectorAll('pre code').forEach(function(el){
+    const src=el.textContent;
+    if(el.classList.contains('lang-sh')) el.innerHTML=hiSh(src);
+    else if(el.classList.contains('lang-ts')||el.classList.contains('lang-yaml')) el.innerHTML=hiTs(src);
+  });
+})();
+</script></body></html>

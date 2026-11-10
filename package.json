@@ -1,0 +1,101 @@
+{
+  "name": "convex-improved-migration",
+  "description": "Data migrations for Convex that fresh deployments, CI and restored snapshots can run safely.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Fanzzzd/convex-improved-migration.git"
+  },
+  "homepage": "https://github.com/Fanzzzd/convex-improved-migration#readme",
+  "bugs": {
+    "url": "https://github.com/Fanzzzd/convex-improved-migration/issues"
+  },
+  "version": "0.1.0",
+  "license": "Apache-2.0",
+  "keywords": [
+    "convex",
+    "component"
+  ],
+  "type": "module",
+  "scripts": {
+    "dev": "convex dev --start 'npm run dev:build'",
+    "dev:frontend": "cd example && vite",
+    "dev:build": "chokidar 'tsconfig*.json' 'src/**/*.ts' -i '**/*.test.ts' -c 'npm run build:codegen' --initial",
+    "predev": "convex init && npm run build:codegen",
+    "build": "tsc --project ./tsconfig.build.json",
+    "build:codegen": "npx convex codegen --component-dir ./src/component && npm run build",
+    "build:clean": "rm -rf ./dist ./*.tsbuildinfo && npm run build",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.consumer.json && tsc -p example && tsc -p example/convex",
+    "lint": "oxlint",
+    "format": "oxfmt",
+    "format:check": "oxfmt --check",
+    "test": "vitest run --typecheck",
+    "test:watch": "vitest --typecheck --clearScreen false",
+    "test:debug": "vitest --inspect-brk --no-file-parallelism",
+    "test:coverage": "vitest run --coverage --coverage.reporter=text",
+    "prepare": "npm run build",
+    "verify:package": "node ./scripts/verify-package.mjs"
+  },
+  "files": [
+    "dist",
+    "src",
+    "!src/**/*.test.ts",
+    "!dist/**/*.test.*"
+  ],
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "types": "./dist/client/index.d.ts",
+      "default": "./dist/client/index.js"
+    },
+    "./test": "./src/test.ts",
+    "./_generated/component.js": {
+      "types": "./dist/component/_generated/component.d.ts"
+    },
+    "./_generated/component": {
+      "types": "./dist/component/_generated/component.d.ts"
+    },
+    "./convex.config.js": {
+      "types": "./dist/component/convex.config.d.ts",
+      "default": "./dist/component/convex.config.js"
+    },
+    "./convex.config": {
+      "types": "./dist/component/convex.config.d.ts",
+      "default": "./dist/component/convex.config.js"
+    }
+  },
+  "peerDependencies": {
+    "convex": "^1.43.0",
+    "convex-test": ">=0.0.61"
+  },
+  "devDependencies": {
+    "@convex-dev/eslint-plugin": "^5.0.0",
+    "@edge-runtime/vm": "^5.0.0",
+    "@types/node": "^26.6.5",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
+    "@typescript/native": "npm:typescript@^7.0.2",
+    "@vitejs/plugin-react": "^6.0.5",
+    "chokidar-cli": "3.0.0",
+    "convex": "^1.44.0",
+    "convex-test": "0.0.61",
+    "oxfmt": "^0.75.0",
+    "oxlint": "^1.90.0",
+    "oxlint-tsgolint": "^7.0.2005",
+    "pkg-pr-new": "^0.0.86",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "typescript": "npm:@typescript/typescript6@^6.0.2",
+    "vite": "8.2.0",
+    "vitest": "4.1.11"
+  },
+  "types": "./dist/client/index.d.ts",
+  "module": "./dist/client/index.js",
+  "bin": {
+    "convex-improved-migration": "dist/cli.js"
+  },
+  "peerDependenciesMeta": {
+    "convex-test": {
+      "optional": true
+    }
+  }
+}

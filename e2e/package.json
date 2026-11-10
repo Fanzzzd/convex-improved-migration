@@ -1,0 +1,11 @@
+{
+  "name": "convex-improved-migration-e2e",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Checks on a real local Convex backend that convex-test cannot simulate. Run ./e2e.sh.",
+  "dependencies": {
+    "convex": "^1.44.0",
+    "convex-improved-migration": "file:.pack/convex-improved-migration.tgz"
+  }
+}

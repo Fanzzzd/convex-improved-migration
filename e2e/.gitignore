@@ -1,0 +1,8 @@
+node_modules
+.pack
+.env.local
+b/.env.local
+*.zip
+.convex
+# Rewritten by every run: the tarball's hash changes.
+package-lock.json

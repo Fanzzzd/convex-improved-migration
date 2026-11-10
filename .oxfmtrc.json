@@ -1,0 +1,27 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "useTabs": true,
+  "printWidth": 80,
+  "trailingComma": "all",
+  "proseWrap": "always",
+  "sortPackageJson": false,
+  "ignorePatterns": [
+    ".agents/",
+    ".claude/",
+    "**/_generated/",
+    "CHANGELOG.md",
+    "skills-lock.json",
+    "**/package-lock.json",
+    "dist/",
+    "docs/design/*.html",
+    "e2e/.pack/"
+  ],
+  "overrides": [
+    {
+      "files": ["*.json", "*.md", "*.yml", "*.yaml"],
+      "options": {
+        "useTabs": false
+      }
+    }
+  ]
+}
