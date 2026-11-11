@@ -41,3 +41,45 @@ jobs:
           npm run typecheck
           npm run lint
           npm run format:check
+
+  windows:
+    # The CLI has its own Windows path: it starts the project's convex script
+    # with node and refuses to run npx through cmd.exe. Run the tests and the
+    # packed bin on Windows to cover it.
+    name: Windows
+    runs-on: windows-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Node setup
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          cache-dependency-path: package-lock.json
+          node-version: "24.x"
+          cache: "npm"
+
+      - name: Install and build
+        run: |
+          npm ci
+          npm run build
+          npm run verify:package
+
+      - name: Test
+        run: npx vitest run
+
+      - name: Packed bin
+        shell: bash
+        run: |
+          npm pack --pack-destination "$RUNNER_TEMP"
+          cd "$RUNNER_TEMP"
+          mkdir app && cd app
+          npm init -y > /dev/null
+          npm install --no-audit --no-fund ../convex-improved-migration-*.tgz convex
+          npx convex-improved-migration --help > /dev/null
+          set +e
+          npx convex-improved-migration rebuild --all -- x
+          code=$?
+          set -e
+          test "$code" = 64

@@ -50,6 +50,13 @@ if (a.hang) setInterval(() => {}, 1000);
 else process.exit(a.code || 0);
 `;
 
+/**
+ * On Windows, killing a child with a signal ends it at once, so its signal
+ * handlers never run. Ctrl+C in a console still reaches them; a test cannot
+ * send that, so the signal checks run on macOS and Linux only.
+ */
+const SIGNALS = process.platform !== "win32";
+
 let dir: string;
 
 beforeEach(() => {
@@ -446,11 +453,15 @@ describe("apply", () => {
 			status: [status({ id: "run1", live: true })],
 		};
 		const timedOut = await cli(["apply", "--timeout", "1s"], scenario);
-		const stopped = await cli(["apply"], scenario, {
-			signalAfterMs: 1500,
-			signal: "SIGTERM",
-		});
-		for (const r of [timedOut, stopped]) {
+		const stopped = SIGNALS
+			? [
+					await cli(["apply"], scenario, {
+						signalAfterMs: 1500,
+						signal: "SIGTERM",
+					}),
+				]
+			: [];
+		for (const r of [timedOut, ...stopped]) {
 			expect(r.err).toContain(
 				"On a local deployment without npx convex dev running, the backend is a process that convex run started. The run moves only while that process lives.",
 			);
@@ -468,25 +479,28 @@ describe("apply", () => {
 		expect(calls()[0]?.args).toEqual({ wait: false });
 	});
 
-	test("SIGINT and SIGTERM stop the program, name cancel, and say the run continues", async () => {
-		for (const [signal, code] of [
-			["SIGINT", 130],
-			["SIGTERM", 143],
-		] as const) {
-			const r = await cli(
-				["apply", "--module", "ops/plan"],
-				{
-					apply: [{ hang: true }],
-					status: [status({ id: "run1", live: true })],
-				},
-				{ signalAfterMs: 1500, signal },
-			);
-			expect(r.code).toBe(code);
-			expect(r.err).toContain(
-				"Interrupted. The run continues while the deployment's backend runs. Stop it with npx convex-improved-migration cancel --module ops/plan.",
-			);
-		}
-	});
+	test.skipIf(!SIGNALS)(
+		"SIGINT and SIGTERM stop the program, name cancel, and say the run continues",
+		async () => {
+			for (const [signal, code] of [
+				["SIGINT", 130],
+				["SIGTERM", 143],
+			] as const) {
+				const r = await cli(
+					["apply", "--module", "ops/plan"],
+					{
+						apply: [{ hang: true }],
+						status: [status({ id: "run1", live: true })],
+					},
+					{ signalAfterMs: 1500, signal },
+				);
+				expect(r.code).toBe(code);
+				expect(r.err).toContain(
+					"Interrupted. The run continues while the deployment's backend runs. Stop it with npx convex-improved-migration cancel --module ops/plan.",
+				);
+			}
+		},
+	);
 });
 
 describe("cancel", () => {
