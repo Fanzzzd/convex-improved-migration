@@ -676,6 +676,17 @@ describe("status, check and mark-done", () => {
 		expect(none.err).toContain("rebuild needs --all or one or more");
 		expect(calls()).toEqual([]);
 	}, 20_000);
+
+	test("a zero --timeout is a usage error before any call", async () => {
+		for (const value of ["0", "0s", "0.0m", "0ms"]) {
+			const r = await cli(["apply", "--timeout", value]);
+			expect(r.code, value).toBe(64);
+			expect(r.err).toContain("--timeout must be more than 0");
+		}
+		const negative = await cli(["apply", "--timeout=-5s"]);
+		expect(negative.code).toBe(64);
+		expect(calls()).toEqual([]);
+	}, 20_000);
 });
 
 describe("hints carry the deployment flags", () => {
