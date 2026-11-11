@@ -37,18 +37,31 @@ jobs:
       ${{ github.event_name == 'push' && github.repository ==
       'Fanzzzd/convex-improved-migration' }}
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
+    # release-please writes with the GitHub App token below, not GITHUB_TOKEN.
+    permissions: {}
     outputs:
       release_created: ${{ steps.release.outputs.release_created }}
       tag_name: ${{ steps.release.outputs.tag_name }}
     steps:
+      # GitHub holds the checks of a pull request that github-actions[bot]
+      # opens until a maintainer approves them. A release PR opened with a
+      # GitHub App token runs its checks at once. The App needs contents,
+      # pull requests and issues (labels) write on this repository.
+      - uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        id: app-token
+        with:
+          client-id: ${{ vars.RELEASE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
+          permission-issues: write
       # Manifest mode: release-please-config.json and
       # .release-please-manifest.json hold the release type and the current
       # version, so the first run after 0.1.0 does not depend on tag order.
       - uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
         id: release
+        with:
+          token: ${{ steps.app-token.outputs.token }}
 
   build:
     needs: release-please

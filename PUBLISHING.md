@@ -39,9 +39,14 @@ dispatch the `Release` workflow with an existing tag and `dry_run` checked. The
 publish job then runs `npm publish --dry-run` and fails unless npm accepted the
 OIDC token exchange.
 
-The repository setting "Allow GitHub Actions to create and approve pull
-requests" (Settings, Actions, General, Workflow permissions) must be on. Without
-it, Release Please cannot open the release PR.
+Release Please writes with a GitHub App token, not `GITHUB_TOKEN`. GitHub holds
+the checks of a pull request that `github-actions[bot]` opens until a maintainer
+approves them, and a release PR opened by the App runs its checks at once. The
+App needs contents, pull requests, and issues write access, and it must be
+installed on this repository. The repository variable `RELEASE_APP_CLIENT_ID`
+holds its client ID and the secret `RELEASE_APP_PRIVATE_KEY` holds a private
+key. If the key leaks or the App is deleted, generate a new key in the App's
+settings and replace the secret.
 
 ## Local verification
 
