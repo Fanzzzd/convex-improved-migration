@@ -3,6 +3,7 @@ import {
 	retryTransient,
 	runLoop,
 	startOver,
+	stepCommand,
 	type AdvanceResult,
 	type Throttle,
 } from "./shared.js";
@@ -340,5 +341,18 @@ describe("startOver", () => {
 	];
 	test.each(cases)("%s", (_name, args, expected) => {
 		expect(startOver(...args)).toEqual(expected);
+	});
+});
+
+describe("stepCommand", () => {
+	test("puts the id after the command, and after -- when it starts with -", () => {
+		expect(stepCommand("reset", "backfill")).toBe("reset backfill");
+		expect(stepCommand("mark-done", "backfill", ' --reason "..."')).toBe(
+			'mark-done backfill --reason "..."',
+		);
+		expect(stepCommand("reset", "-old")).toBe("reset -- -old");
+		expect(stepCommand("mark-done", "-old", ' --reason "..."')).toBe(
+			'mark-done --reason "..." -- -old',
+		);
 	});
 });

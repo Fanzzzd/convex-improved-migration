@@ -36,6 +36,7 @@ import {
 	runLoop,
 	runStepArgsValidator,
 	startOver,
+	stepCommand,
 	type BatchResult,
 	type ClearResult,
 	type DryRunChange,
@@ -699,7 +700,7 @@ export function defineMigrations<
 			const wrong = picked.find((e) => e.kind !== "rebuild");
 			if (wrong) {
 				throw new Error(
-					`"${wrong.name}" is a ${wrong.kind}, not a rebuild. Use ${cli(`reset ${wrong.name}`)} instead.`,
+					`"${wrong.name}" is a ${wrong.kind}, not a rebuild. Use ${cli(stepCommand("reset", wrong.name))} instead.`,
 				);
 			}
 			return picked.map((e) => e.name);
@@ -723,7 +724,7 @@ export function defineMigrations<
 			const list = orphans.map((o) => `"${o.name}" (${o.state})`).join(", ");
 			return new Error(
 				`Refusing to run: ${list} ${orphans.length === 1 ? "was" : "were"} removed from the Plan before finishing on this deployment. ` +
-					`Put the Step back and run apply, or record it with ${cli(`mark-done ${orphans[0]?.name ?? "<step>"} --reason "..."`)}.`,
+					`Put the Step back and run apply, or record it with ${cli(stepCommand("mark-done", orphans[0]?.name ?? "<step>", ' --reason "..."'))}.`,
 			);
 		}
 
@@ -753,8 +754,10 @@ export function defineMigrations<
 					table
 						? `Next: fix the cause, then ${cli("apply")} resumes from the saved cursor.`
 						: `Next: fix the cause, then ${cli("apply")} runs it again.`,
-					...(table ? [`Or restart this Step: ${cli(`reset ${name}`)}`] : []),
-					`Or record it as done without running: ${cli(`mark-done ${name} --reason "..."`)}`,
+					...(table
+						? [`Or restart this Step: ${cli(stepCommand("reset", name))}`]
+						: []),
+					`Or record it as done without running: ${cli(stepCommand("mark-done", name, ' --reason "..."'))}`,
 				].join("\n"),
 			);
 		}
@@ -897,14 +900,14 @@ export function defineMigrations<
 				next.push(
 					cli(`status --events ${failed.id}`),
 					cli("apply"),
-					cli(`reset ${failed.id}`),
-					cli(`mark-done ${failed.id} --reason "..."`),
+					cli(stepCommand("reset", failed.id)),
+					cli(stepCommand("mark-done", failed.id, ' --reason "..."')),
 				);
 			} else if (state === "running") {
 				next.push(cli("status"), cli("cancel"));
 			} else if (state !== "done") {
 				for (const o of unfinished)
-					next.push(cli(`mark-done ${o.id} --reason "..."`));
+					next.push(cli(stepCommand("mark-done", o.id, ' --reason "..."')));
 				if (unfinished.length === 0) next.push(cli("apply"));
 			}
 			return {
@@ -1331,7 +1334,7 @@ export function defineMigrations<
 						throw new Error(
 							`"${id}" is already done (${how}). Nothing changed.` +
 								(shown
-									? ` To record it again, run ${cli(`reset ${id}`)} first.`
+									? ` To record it again, run ${cli(stepCommand("reset", id))} first.`
 									: ""),
 						);
 					}
