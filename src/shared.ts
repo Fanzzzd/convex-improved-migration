@@ -225,6 +225,17 @@ const MAX_THROTTLE_RETRIES = 8;
  * component then arms its sentinel with the longest delay setTimeout can
  * hold, because convex-test schedules with setTimeout.
  */
+/**
+ * A CLI command that names a Step, for hints. An id that starts with "-"
+ * goes after `--`, so the CLI reads it as an id; options in `tail` then go
+ * before the `--`.
+ */
+export function stepCommand(command: string, id: string, tail = ""): string {
+	return id.startsWith("-")
+		? `${command}${tail} -- ${id}`
+		: `${command} ${id}${tail}`;
+}
+
 export const SHORT_SENTINEL_FLAG = "__convexImprovedMigrationShortSentinel";
 
 /** Deployment write throttles, for example "Too many writes per second". */

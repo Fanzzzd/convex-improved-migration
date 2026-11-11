@@ -119,13 +119,13 @@ argument as typed or refuses it with a usage error. An option that a command
 does not read is refused, so `rebuild --all --dry-run` does not rebuild. A flag
 with a value is refused, so `--prod=false` does not target production. An option
 in place of a value is refused: write `--reason=--prod` to mean that text. A
-Step id that starts with `-` goes after `--`, as in `reset -- -old`. `rebuild`
-takes `--all` or ids, not both. `--timeout` must be more than 0; leave it out to
-wait until the run ends. The commands that messages suggest come without your
-deployment flags. The CLI adds them to its own suggestions and, for the
-server's, prints "Add --prod to each command above", with the admin key shown as
-`<key>`. With a wrong `--module` the CLI says to pass the file that holds the
-Plan.
+Step id that starts with `-` goes after `--`, as in `reset -- -old`, also in the
+commands that messages suggest. `rebuild` takes `--all` or ids, not both.
+`--timeout` must be more than 0; leave it out to wait until the run ends. The
+commands that messages suggest come without your deployment flags. The CLI adds
+them to its own suggestions and, for the server's, prints "Add --prod to each
+command above", with the admin key shown as `<key>`. With a wrong `--module` the
+CLI says to pass the file that holds the Plan.
 
 Exit codes: 0 when every Step is Done or the command succeeded. 1 when a Step
 failed, a check failed, or the server refused. 2 when `--timeout` passed and the

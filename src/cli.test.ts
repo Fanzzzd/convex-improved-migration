@@ -15,6 +15,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
+import { stepCommand } from "./shared.js";
 
 const CLI = join(dirname(fileURLToPath(import.meta.url)), "cli.ts");
 
@@ -686,6 +687,29 @@ describe("status, check and mark-done", () => {
 		const negative = await cli(["apply", "--timeout=-5s"]);
 		expect(negative.code).toBe(64);
 		expect(calls()).toEqual([]);
+	}, 20_000);
+
+	test("a server hint for a Step id that starts with - runs as printed", async () => {
+		const status = plan([step({ state: "done", reason: "done" })]);
+		for (const [hint, op, extra] of [
+			[stepCommand("reset", "-old"), "reset", {}],
+			[
+				stepCommand("mark-done", "-old", ' --reason "..."'),
+				"markDone",
+				{ reason: "..." },
+			],
+		] as const) {
+			expect(hint).toContain("-- -old");
+			const tokens = hint.split(" ").map((t) => t.replace(/^"(.*)"$/, "$1"));
+			rmSync(join(dir, "calls.jsonl"), { force: true });
+			const r = await cli(tokens, { status: [status], operate: [status] });
+			expect(r.code, hint).toBe(0);
+			expect(calls().find((c) => c.fn === "operate")?.args).toMatchObject({
+				op,
+				id: "-old",
+				...extra,
+			});
+		}
 	}, 20_000);
 });
 
