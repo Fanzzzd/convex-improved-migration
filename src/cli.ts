@@ -451,7 +451,12 @@ function parseDuration(text: string): number {
 		throw new UsageError(`Cannot read duration "${text}". Use 90s, 30m or 2h.`);
 	const n = Number(m[1]);
 	const unit = m[2] ?? "s";
-	return n * { ms: 1, s: 1000, m: 60_000, h: 3_600_000 }[unit]!;
+	const ms = n * { ms: 1, s: 1000, m: 60_000, h: 3_600_000 }[unit]!;
+	if (ms <= 0)
+		throw new UsageError(
+			`--timeout must be more than 0, not "${text}". Leave it out to wait until the run ends.`,
+		);
+	return ms;
 }
 
 function needOne(p: Parsed, what: string): string {
