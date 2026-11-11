@@ -221,11 +221,6 @@ export type LoopOutcome =
 const MAX_THROTTLE_RETRIES = 8;
 
 /**
- * A global that `register` from convex-improved-migration/test sets. The
- * component then arms its sentinel with the longest delay setTimeout can
- * hold, because convex-test schedules with setTimeout.
- */
-/**
  * A CLI command that names a Step, for hints. An id that starts with "-"
  * goes after `--`, so the CLI reads it as an id; options in `tail` then go
  * before the `--`.
@@ -236,6 +231,11 @@ export function stepCommand(command: string, id: string, tail = ""): string {
 		: `${command} ${id}${tail}`;
 }
 
+/**
+ * A global that `register` from convex-improved-migration/test sets. The
+ * component then arms its sentinel with the longest delay setTimeout can
+ * hold, because convex-test schedules with setTimeout.
+ */
 export const SHORT_SENTINEL_FLAG = "__convexImprovedMigrationShortSentinel";
 
 /** Deployment write throttles, for example "Too many writes per second". */
