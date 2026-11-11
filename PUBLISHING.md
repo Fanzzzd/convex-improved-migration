@@ -7,10 +7,13 @@ The first release is the one exception, see below.
 2. Release Please opens or updates a release PR containing the version bump and
    changelog.
 3. Review and merge that PR.
-4. The workflow creates the immutable GitHub tag and release, installs from
-   `package-lock.json`, performs a clean build, verifies every package export,
-   checks formatting, runs tests, typechecking, and linting, then publishes
-   through npm trusted publishing with provenance.
+4. The workflow creates the immutable GitHub tag and release. The `build` job
+   installs from `package-lock.json`, performs a clean build, verifies every
+   package export, checks formatting, runs tests, typechecking, and linting,
+   then packs the tarball. It has no publish rights. The `publish` job holds the
+   OIDC token, checks out no code and installs no dependencies. It checks the
+   tarball's version against the tag and publishes that tarball through npm
+   trusted publishing with provenance.
 
 Do not run `npm version`, `npm publish`, or create release tags manually.
 
@@ -31,7 +34,10 @@ checks out that tag and refuses to publish unless it exactly matches the version
 in `package.json`.
 
 The npm package's trusted-publisher configuration must name this repository and
-the workflow file `release-please.yml` exactly.
+the workflow file `release-please.yml` exactly. To check it without publishing,
+dispatch the `Release` workflow with an existing tag and `dry_run` checked. The
+publish job then runs `npm publish --dry-run` and fails unless npm accepted the
+OIDC token exchange.
 
 The repository setting "Allow GitHub Actions to create and approve pull
 requests" (Settings, Actions, General, Workflow permissions) must be on. Without
