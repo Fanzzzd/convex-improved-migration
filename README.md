@@ -1,5 +1,8 @@
 # convex-improved-migration
 
+[![npm version](https://badge.fury.io/js/convex-improved-migration.svg)](https://badge.fury.io/js/convex-improved-migration)
+[![Convex Component](https://www.convex.dev/components/badge/convex-improved-migration)](https://www.convex.dev/components/convex-improved-migration)
+
 A Convex component that runs data migrations, seeds and rebuilds from one
 ordered Plan. One command runs the Plan, waits for it to finish, and exits
 non-zero when a Step fails, so a deploy or setup script can stop on it.
