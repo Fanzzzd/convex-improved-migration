@@ -661,6 +661,21 @@ describe("status, check and mark-done", () => {
 		}
 		expect(calls()).toEqual([]);
 	});
+
+	test("rebuild with both --all and ids says they cannot be combined", async () => {
+		for (const args of [
+			["rebuild", "--all", "--", "x"],
+			["rebuild", "x", "--all"],
+		]) {
+			const r = await cli(args);
+			expect(r.code, args.join(" ")).toBe(64);
+			expect(r.err).toContain("--all and Rebuild ids cannot be combined");
+		}
+		const none = await cli(["rebuild"]);
+		expect(none.code).toBe(64);
+		expect(none.err).toContain("rebuild needs --all or one or more");
+		expect(calls()).toEqual([]);
+	}, 20_000);
 });
 
 describe("hints carry the deployment flags", () => {

@@ -718,7 +718,12 @@ async function main(argv: string[]): Promise<number> {
 		}
 		case "rebuild": {
 			const all = p.flags.has("--all");
-			if (all === p.positional.length > 0) {
+			if (all && p.positional.length > 0) {
+				throw new UsageError(
+					"--all and Rebuild ids cannot be combined. Pass --all, or the ids alone.",
+				);
+			}
+			if (!all && p.positional.length === 0) {
 				throw new UsageError("rebuild needs --all or one or more Rebuild ids.");
 			}
 			return await follow(p, { rebuild: all ? "all" : p.positional });
